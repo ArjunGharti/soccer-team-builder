@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>Soccer Team Balancer</title>
+<style>
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-tertiary: #9CA3AF;
+  --color-bg: #FFFFFF;
+  --color-bg2: #F3F4F6;
+  --color-border: #E5E7EB;
+  --color-border2: #D1D5DB;
+  --r-lg: 12px;
+  --r-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: #F9FAFB; font-family: var(--font-sans); -webkit-text-size-adjust: 100%; }
+.app { max-width: 430px; margin: 0 auto; padding-bottom: calc(2rem + env(safe-area-inset-bottom,0px)); min-height: 100vh; }
+
+/* TAB BAR */
+.tab-bar { display: flex; border-bottom: 1px solid var(--color-border); margin-bottom: 1.5rem; background: var(--color-bg); position: sticky; top: 0; z-index: 5; }
+.tab { flex: 1; padding: 10px 4px 8px; text-align: center; font-size: 11px; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; user-select: none; line-height: 1.3; }
+.tab.active { color: var(--color-text-primary); border-bottom: 2px solid var(--color-text-primary); font-weight: 600; }
+.tab svg { display: block; margin: 0 auto 3px; }
+
+/* SECTIONS */
+.section { display: none; padding: 0 1rem; }
+.section.active { display: block; }
+.section-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* SUMMARY */
+.summary-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+.summary-pill { flex: 1; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--r-md); padding: 12px 8px; text-align: center; }
+.summary-pill .num { font-size: 22px; font-weight: 600; color: var(--color-text-primary); }
+.summary-pill .lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+
+/* TEAMS PICKER */
+.teams-picker { display: flex; gap: 6px; margin-bottom: 1rem; }
+.tpick { flex: 1; padding: 10px 2px; border: 1px solid var(--color-border2); border-radius: var(--r-md); background: var(--color-bg2); cursor: pointer; font-size: 13px; color: var(--color-text-primary); font-weight: 500; text-align: center; font-family: var(--font-sans); -webkit-appearance: none; }
+.tpick.selected { background: var(--color-text-primary); color: var(--color-bg); border-color: var(--color-text-primary); }
+
+/* PLAYER CARD */
+.player-card { display: flex; align-items: center; gap: 10px; padding: 11px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--r-lg); margin-bottom: 8px; -webkit-user-select: none; user-select: none; }
+.player-card:active { opacity: 0.65; }
+.avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.player-info { flex: 1; min-width: 0; }
+.player-name { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.player-meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
+.stars { color: #EF9F27; letter-spacing: 1px; }
+
+/* CHECK BUTTON — circle, no icon font needed */
+.check-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1.5px solid var(--color-border2);
+  background: var(--color-bg2);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.check-btn.checked { background: #1D9E75; border-color: #1D9E75; }
+.check-btn .chk-icon { display: none; }
+.check-btn.checked .chk-icon { display: block; }
+
+/* BADGE */
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+.pos-GK  { background: #EEEDFE; color: #3C3489; }
+.pos-DEF { background: #E6F1FB; color: #0C447C; }
+.pos-MID { background: #E1F5EE; color: #085041; }
+.pos-FWD { background: #FAECE7; color: #712B13; }
+
+/* BUTTONS */
+.action-btn { width: 100%; padding: 13px; border-radius: var(--r-md); border: 1px solid var(--color-border2); background: var(--color-bg); font-size: 15px; font-weight: 500; cursor: pointer; color: var(--color-text-primary); margin-bottom: 8px; font-family: var(--font-sans); -webkit-appearance: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.action-btn:active { opacity: 0.65; }
+.action-btn.primary { background: var(--color-text-primary); color: var(--color-bg); border-color: var(--color-text-primary); }
+.action-btn.danger { border-color: #A32D2D; color: #A32D2D; }
+.delete-btn { background: none; border: none; cursor: pointer; color: var(--color-text-tertiary); padding: 6px; min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0; }
+.delete-btn:active { background: #FEE2E2; color: #A32D2D; }
+
+/* ADD FORM */
+.add-form { background: var(--color-bg2); border-radius: var(--r-lg); padding: 1rem; margin-bottom: 1rem; }
+.add-form input, .add-form select { width: 100%; margin-bottom: 8px; padding: 11px 12px; border-radius: var(--r-md); border: 1px solid var(--color-border2); background: var(--color-bg); font-size: 15px; font-family: var(--font-sans); color: var(--color-text-primary); -webkit-appearance: none; appearance: none; outline: none; }
+.add-form select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%236B7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+.add-form input:focus, .add-form select:focus { border-color: #111827; }
+
+/* TEAM CARD */
+.team-card { background: var(--color-bg); border-left: 4px solid #ccc; border-top: 1px solid var(--color-border); border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); border-radius: var(--r-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--color-border); }
+.team-name { font-size: 15px; font-weight: 600; }
+.team-meta { font-size: 12px; color: var(--color-text-secondary); }
+.team-player { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--color-border); }
+.team-player:last-child { border-bottom: none; }
+.pos-section-label { font-size: 11px; color: var(--color-text-secondary); padding: 6px 0 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.balance-track { flex: 1; height: 5px; background: var(--color-bg2); border-radius: 3px; overflow: hidden; }
+.balance-fill { height: 100%; border-radius: 3px; }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--color-text-secondary); font-size: 14px; line-height: 1.6; }
+
+/* TOAST */
+.toast { position: fixed; bottom: calc(1.5rem + env(safe-area-inset-bottom,0px)); left: 50%; transform: translateX(-50%); background: #111827; color: #fff; font-size: 13px; padding: 10px 20px; border-radius: 99px; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: nowrap; z-index: 100; }
+.toast.show { opacity: 1; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-box { background: var(--color-bg); border-radius: 16px 16px 0 0; width: 100%; max-width: 430px; padding: 20px 16px calc(16px + env(safe-area-inset-bottom,0px)); }
+.modal-title { font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: 6px; }
+.modal-msg { font-size: 14px; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; padding: 13px; border-radius: var(--r-md); font-size: 15px; font-weight: 500; border: 1px solid var(--color-border2); cursor: pointer; font-family: var(--font-sans); -webkit-appearance: none; }
+.modal-btn-cancel { background: var(--color-bg2); color: var(--color-text-primary); }
+.modal-btn-confirm { background: #A32D2D; color: #fff; border-color: #A32D2D; }
+.modal-btn-confirm.safe { background: var(--color-text-primary); border-color: var(--color-text-primary); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="toast" id="toast"></div>
+
+  <!-- Bottom-sheet modal (replaces confirm() blocked by Safari) -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-msg" id="modal-msg"></div>
+      <div class="modal-btns">
+        <button class="modal-btn-cancel" onclick="modalCancel()">Cancel</button>
+        <button class="modal-btn-confirm" id="modal-confirm-btn" onclick="modalConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR — all icons are inline SVG, zero CDN dependency -->
+  <div class="tab-bar">
+    <div class="tab active" onclick="showTab('matchday')" id="tab-matchday">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20A14.5 14.5 0 0 0 12 2"/><path d="M2 12h20"/></svg>
+      Match day
+    </div>
+    <div class="tab" onclick="showTab('roster')" id="tab-roster">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Roster
+    </div>
+    <div class="tab" onclick="showTab('teams')" id="tab-teams">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+      Teams
+    </div>
+    <div class="tab" onclick="showTab('backup')" id="tab-backup">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/></svg>
+      Backup
+    </div>
+  </div>
+
+  <!-- MATCH DAY -->
+  <div class="section active" id="section-matchday">
+    <div class="summary-bar" id="summary-bar"></div>
+    <p class="section-label">Number of teams</p>
+    <div class="teams-picker" id="teams-picker"></div>
+    <p class="section-label" style="margin-top:4px">Who showed up today?</p>
+    <div id="matchday-list"></div>
+    <button class="action-btn primary" onclick="generateTeams()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m13 13-5.5 5.5"/><path d="m13 13 1.5-1.5"/></svg>
+      Generate balanced teams
+    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="action-btn" onclick="selectAll()">Select all</button>
+      <button class="action-btn" onclick="clearAll()">Clear all</button>
+    </div>
+  </div>
+
+  <!-- ROSTER -->
+  <div class="section" id="section-roster">
+    <div class="add-form">
+      <p class="section-label">Add new player</p>
+      <input type="text" id="new-name" placeholder="Player name" autocomplete="off" autocorrect="off" autocapitalize="words" />
+      <select id="new-pos">
+        <option value="GK">GK - Goalkeeper</option>
+        <option value="DEF">DEF - Defender</option>
+        <option value="MID" selected>MID - Midfielder</option>
+        <option value="FWD">FWD - Forward</option>
+      </select>
+      <select id="new-str">
+        <option value="1">Beginner (1 star)</option>
+        <option value="2">Casual (2 stars)</option>
+        <option value="3" selected>Average (3 stars)</option>
+        <option value="4">Good (4 stars)</option>
+        <option value="5">Elite (5 stars)</option>
+      </select>
+      <button class="action-btn primary" onclick="addPlayer()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add player
+      </button>
+    </div>
+    <div id="roster-list"></div>
+  </div>
+
+  <!-- TEAMS -->
+  <div class="section" id="section-teams">
+    <div id="teams-output">
+      <div class="empty-state">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Go to Match day, pick how many teams,<br>select players and hit Generate
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKUP -->
+  <div class="section" id="section-backup">
+    <div class="team-card" style="margin-bottom:1rem;border-left:none;border:1px solid var(--color-border)">
+      <p class="section-label">Export squad</p>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.6">Download your full roster as a file. Save it to your iPhone Files app so you never lose it.</p>
+      <button class="action-btn primary" onclick="exportData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export squad to file
+      </button>
+    </div>
+    <div class="team-card" style="margin-bottom:1rem;border-left:none;border:1px solid var(--color-border)">
+      <p class="section-label">Import squad</p>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.6">Restore your roster from a previously exported file. This will replace your current roster.</p>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)" />
+      <button class="action-btn" onclick="document.getElementById('import-file').click()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import squad from file
+      </button>
+    </div>
+    <div class="team-card" style="border-left:none;border:1px solid var(--color-border)">
+      <p class="section-label">Danger zone</p>
+      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px;line-height:1.6">Clear all players and reset the app. Export first to keep a backup!</p>
+      <button class="action-btn danger" onclick="nukeAll()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Clear all data
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Inline SVGs for JS-generated content
+var SVG = {
+  check: '<svg class="chk-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  trash: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+  refresh: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
+};
+
+const TEAMS = [
+  { name:'Blue',   color:'#185FA5' },
+  { name:'Green',  color:'#3B6D11' },
+  { name:'Yellow', color:'#BA7517' },
+  { name:'Red',    color:'#A32D2D' },
+  { name:'Purple', color:'#534AB7' },
+  { name:'Orange', color:'#993C1D' },
+];
+const POSITIONS = ['GK','DEF','MID','FWD'];
+const AVATARS = ['#EEEDFE|#3C3489','#E6F1FB|#0C447C','#E1F5EE|#085041','#FAECE7|#712B13','#FAEEDA|#633806','#FBEAF0|#72243E'];
+
+var players = JSON.parse(localStorage.getItem('sp_players') || 'null') || [
+  {id:1,name:'Ali',pos:'GK',str:4},{id:2,name:'Bruno',pos:'DEF',str:3},{id:3,name:'Carlos',pos:'DEF',str:4},
+  {id:4,name:'David',pos:'MID',str:5},{id:5,name:'Emre',pos:'MID',str:3},{id:6,name:'Faris',pos:'MID',str:4},
+  {id:7,name:'George',pos:'FWD',str:4},{id:8,name:'Hassan',pos:'FWD',str:3},{id:9,name:'Ivan',pos:'DEF',str:2},
+  {id:10,name:'Javier',pos:'MID',str:3},{id:11,name:'Karim',pos:'FWD',str:5},{id:12,name:'Leo',pos:'DEF',str:4}
+];
+var present = new Set(JSON.parse(localStorage.getItem('sp_present') || '[]'));
+var numTeams = parseInt(localStorage.getItem('sp_numteams') || '2');
+var nextId = players.reduce(function(m,p){return Math.max(m,p.id);},0)+1;
+
+/* ── Modal (Safari blocks confirm()) ── */
+var _modalResolve = null;
+function showModal(title, msg, label, danger) {
+  return new Promise(function(resolve) {
+    _modalResolve = resolve;
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-msg').textContent = msg;
+    var btn = document.getElementById('modal-confirm-btn');
+    btn.textContent = label || 'Confirm';
+    btn.className = 'modal-btn-confirm' + (danger ? '' : ' safe');
+    document.getElementById('modal-overlay').classList.add('open');
+  });
+}
+function modalConfirm() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  if (_modalResolve) { _modalResolve(true); _modalResolve = null; }
+}
+function modalCancel() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  if (_modalResolve) { _modalResolve(false); _modalResolve = null; }
+}
+
+function save() {
+  localStorage.setItem('sp_players', JSON.stringify(players));
+  localStorage.setItem('sp_present', JSON.stringify([...present]));
+  localStorage.setItem('sp_numteams', String(numTeams));
+}
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 2200);
+}
+function initials(name) { return name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2); }
+function avatarStyle(id) { var c=AVATARS[id%AVATARS.length].split('|'); return 'background:'+c[0]+';color:'+c[1]; }
+function stars(n) { return '&#9733;'.repeat(n)+'&#9734;'.repeat(5-n); }
+
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.section').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('section-'+t).classList.add('active');
+}
+
+function renderTeamsPicker() {
+  document.getElementById('teams-picker').innerHTML = [2,3,4,5,6].map(function(n){
+    return '<div class="tpick'+(numTeams===n?' selected':'')+'" onclick="setNumTeams('+n+')">'+n+' teams</div>';
+  }).join('');
+}
+function setNumTeams(n) { numTeams=n; save(); renderTeamsPicker(); }
+
+function renderMatchday() {
+  var pres = present.size;
+  document.getElementById('summary-bar').innerHTML =
+    '<div class="summary-pill"><div class="num">'+players.length+'</div><div class="lbl">Total</div></div>'+
+    '<div class="summary-pill"><div class="num">'+pres+'</div><div class="lbl">Today</div></div>'+
+    '<div class="summary-pill"><div class="num">'+(players.length-pres)+'</div><div class="lbl">Absent</div></div>';
+
+  var list = document.getElementById('matchday-list');
+  if(!players.length){
+    list.innerHTML='<div class="empty-state">No players yet.<br>Add some in the Roster tab.</div>';
+    return;
+  }
+  var grouped={GK:[],DEF:[],MID:[],FWD:[]};
+  players.forEach(function(p){grouped[p.pos].push(p);});
+  list.innerHTML = POSITIONS.map(function(pos){
+    if(!grouped[pos].length) return '';
+    return '<p class="section-label" style="margin-top:12px">'+pos+'</p>'+
+      grouped[pos].map(function(p){
+        var chk = present.has(p.id);
+        return '<div class="player-card" onclick="togglePresent('+p.id+')">'+
+          '<div class="avatar" style="'+avatarStyle(p.id)+'">'+initials(p.name)+'</div>'+
+          '<div class="player-info">'+
+            '<div class="player-name">'+p.name+'</div>'+
+            '<div class="player-meta"><span class="stars">'+stars(p.str)+'</span></div>'+
+          '</div>'+
+          '<div class="check-btn'+(chk?' checked':'')+'">'+SVG.check+'</div>'+
+        '</div>';
+      }).join('');
+  }).join('');
+}
+
+function renderRoster() {
+  var list = document.getElementById('roster-list');
+  if(!players.length){
+    list.innerHTML='<div class="empty-state">No players yet.<br>Add one above.</div>';
+    return;
+  }
+  var grouped={GK:[],DEF:[],MID:[],FWD:[]};
+  players.forEach(function(p){grouped[p.pos].push(p);});
+  list.innerHTML = POSITIONS.map(function(pos){
+    if(!grouped[pos].length) return '';
+    return '<p class="section-label" style="margin-top:12px">'+pos+'</p>'+
+      grouped[pos].map(function(p){
+        return '<div class="player-card" style="cursor:default">'+
+          '<div class="avatar" style="'+avatarStyle(p.id)+'">'+initials(p.name)+'</div>'+
+          '<div class="player-info">'+
+            '<div class="player-name">'+p.name+'</div>'+
+            '<div class="player-meta"><span class="badge pos-'+p.pos+'">'+p.pos+'</span> <span class="stars">'+stars(p.str)+'</span></div>'+
+          '</div>'+
+          '<button class="delete-btn" onclick="removePlayer('+p.id+')" aria-label="Remove">'+SVG.trash+'</button>'+
+        '</div>';
+      }).join('');
+  }).join('');
+}
+
+function togglePresent(id) {
+  present.has(id) ? present.delete(id) : present.add(id);
+  save(); renderMatchday();
+}
+function selectAll() { players.forEach(function(p){present.add(p.id);}); save(); renderMatchday(); }
+function clearAll() { present.clear(); save(); renderMatchday(); }
+
+function addPlayer() {
+  var name = document.getElementById('new-name').value.trim();
+  if(!name) { toast('Enter a player name'); return; }
+  players.push({id:nextId++, name:name, pos:document.getElementById('new-pos').value, str:parseInt(document.getElementById('new-str').value)});
+  document.getElementById('new-name').value='';
+  save(); renderRoster(); renderMatchday();
+  toast('Player added!');
+}
+
+async function removePlayer(id) {
+  var p = players.find(function(x){return x.id===id;});
+  var ok = await showModal('Remove player','Remove '+(p?p.name:'this player')+' from your roster?','Remove',true);
+  if(!ok) return;
+  players = players.filter(function(x){return x.id!==id;});
+  present.delete(id);
+  save(); renderRoster(); renderMatchday();
+  toast('Player removed');
+}
+
+function generateTeams() {
+  var squad = players.filter(function(p){return present.has(p.id);});
+  if(squad.length < numTeams){ toast('Need at least '+numTeams+' players for '+numTeams+' teams.'); return; }
+  var teams=[];
+  for(var i=0;i<numTeams;i++) teams.push({players:[],sum:0});
+  POSITIONS.forEach(function(pos){
+    var group = squad.filter(function(p){return p.pos===pos;})
+      .map(function(p){return Object.assign({},p,{_r:Math.random()});})
+      .sort(function(a,b){return b.str!==a.str?b.str-a.str:a._r-b._r;});
+    group.forEach(function(p){
+      var idx=teams.reduce(function(mi,t,i,arr){return t.sum<arr[mi].sum?i:mi;},0);
+      teams[idx].players.push(p); teams[idx].sum+=p.str;
+    });
+  });
+  var maxSum=Math.max.apply(null,teams.map(function(t){return t.sum;}));
+  var out=document.getElementById('teams-output');
+  out.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'+
+      '<p style="font-size:14px;font-weight:600">'+numTeams+' balanced teams</p>'+
+      '<button class="action-btn" style="width:auto;padding:7px 14px;font-size:13px;margin:0;gap:5px" onclick="generateTeams()">'+SVG.refresh+' Reshuffle</button>'+
+    '</div>'+
+    teams.map(function(team,i){
+      var T=TEAMS[i];
+      var avg=team.players.length?(team.sum/team.players.length).toFixed(1):'0.0';
+      var byPos={GK:[],DEF:[],MID:[],FWD:[]};
+      team.players.forEach(function(p){byPos[p.pos].push(p);});
+      var fillPct=maxSum>0?Math.round((team.sum/maxSum)*100):0;
+      var rows=POSITIONS.map(function(pos){
+        if(!byPos[pos].length) return '';
+        return '<div class="pos-section-label">'+pos+'</div>'+
+          byPos[pos].map(function(p){
+            return '<div class="team-player">'+
+              '<div style="width:10px;height:10px;border-radius:50%;background:'+T.color+';flex-shrink:0"></div>'+
+              '<div class="avatar" style="'+avatarStyle(p.id)+';width:26px;height:26px;font-size:10px">'+initials(p.name)+'</div>'+
+              '<div style="flex:1;font-size:13px;font-weight:500;color:var(--color-text-primary)">'+p.name+'</div>'+
+              '<span class="stars" style="font-size:11px">'+stars(p.str)+'</span>'+
+            '</div>';
+          }).join('');
+      }).join('');
+      return '<div class="team-card" style="border-left:4px solid '+T.color+'">'+
+        '<div class="team-header">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<div style="width:14px;height:14px;border-radius:50%;background:'+T.color+'"></div>'+
+            '<div class="team-name" style="color:'+T.color+'">'+T.name+'</div>'+
+          '</div>'+
+          '<div class="team-meta">'+team.players.length+' players &middot; avg '+avg+'&#9733;</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-secondary);margin-bottom:10px">'+
+          '<span style="min-width:52px">Strength</span>'+
+          '<div class="balance-track"><div class="balance-fill" style="width:'+fillPct+'%;background:'+T.color+'"></div></div>'+
+          '<span style="min-width:20px;text-align:right">'+team.sum+'</span>'+
+        '</div>'+
+        '<div style="border-top:1px solid var(--color-border);padding-top:6px">'+rows+'</div>'+
+      '</div>';
+    }).join('');
+  showTab('teams');
+}
+
+function exportData() {
+  var blob=new Blob([JSON.stringify({version:2,players:players,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='my_squad.json'; a.click();
+  toast('Squad exported!');
+}
+
+function importData(e) {
+  var file=e.target.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=async function(ev){
+    try {
+      var data=JSON.parse(ev.target.result);
+      if(!data.players||!Array.isArray(data.players)) throw new Error();
+      var ok=await showModal('Import squad','Replace your current '+players.length+' players with '+data.players.length+' imported players?','Import',false);
+      if(!ok) return;
+      players=data.players;
+      nextId=players.reduce(function(m,p){return Math.max(m,p.id);},0)+1;
+      present.clear(); save(); renderRoster(); renderMatchday();
+      toast(players.length+' players imported!');
+    } catch(err){ toast('Invalid file.'); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+
+async function nukeAll() {
+  var ok=await showModal('Clear all data','Delete ALL players? Export first to keep a backup!','Delete all',true);
+  if(!ok) return;
+  players=[]; present.clear(); nextId=1;
+  save(); renderRoster(); renderMatchday();
+  toast('All data cleared');
+}
+
+renderTeamsPicker(); renderMatchday(); renderRoster();
+</script>
+</body>
+</html>

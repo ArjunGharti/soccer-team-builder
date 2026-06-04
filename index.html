@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<title>Soccer Team Builder</title>
+<title>Soccer Team Balancer</title>
 <style>
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
@@ -73,6 +73,7 @@ html, body { background: #F9FAFB; font-family: var(--font-sans); -webkit-text-si
 .pos-DEF { background: #E6F1FB; color: #0C447C; }
 .pos-MID { background: #E1F5EE; color: #085041; }
 .pos-FWD { background: #FAECE7; color: #712B13; }
+.pos-WIN { background: #FEF3C7; color: #78350F; }
 
 /* BUTTONS */
 .action-btn { width: 100%; padding: 13px; border-radius: var(--r-md); border: 1px solid var(--color-border2); background: var(--color-bg); font-size: 15px; font-weight: 500; cursor: pointer; color: var(--color-text-primary); margin-bottom: 8px; font-family: var(--font-sans); -webkit-appearance: none; display: flex; align-items: center; justify-content: center; gap: 6px; }
@@ -181,6 +182,7 @@ html, body { background: #F9FAFB; font-family: var(--font-sans); -webkit-text-si
         <option value="GK">GK - Goalkeeper</option>
         <option value="DEF">DEF - Defender</option>
         <option value="MID" selected>MID - Midfielder</option>
+        <option value="WIN">WIN - Winger</option>
         <option value="FWD">FWD - Forward</option>
       </select>
       <select id="new-str">
@@ -254,7 +256,7 @@ const TEAMS = [
   { name:'Purple', color:'#534AB7' },
   { name:'Orange', color:'#993C1D' },
 ];
-const POSITIONS = ['GK','DEF','MID','FWD'];
+const POSITIONS = ['GK','DEF','MID','WIN','FWD'];
 const AVATARS = ['#EEEDFE|#3C3489','#E6F1FB|#0C447C','#E1F5EE|#085041','#FAECE7|#712B13','#FAEEDA|#633806','#FBEAF0|#72243E'];
 
 var players = JSON.parse(localStorage.getItem('sp_players') || 'null') || [
@@ -329,10 +331,10 @@ function renderMatchday() {
     list.innerHTML='<div class="empty-state">No players yet.<br>Add some in the Roster tab.</div>';
     return;
   }
-  var grouped={GK:[],DEF:[],MID:[],FWD:[]};
-  players.forEach(function(p){grouped[p.pos].push(p);});
+  var grouped={GK:[],DEF:[],MID:[],WIN:[],FWD:[]};
+  players.forEach(function(p){if(grouped[p.pos])grouped[p.pos].push(p);else grouped[p.pos]=[p];});
   list.innerHTML = POSITIONS.map(function(pos){
-    if(!grouped[pos].length) return '';
+    if(!grouped[pos]||!grouped[pos].length) return '';
     return '<p class="section-label" style="margin-top:12px">'+pos+'</p>'+
       grouped[pos].map(function(p){
         var chk = present.has(p.id);
@@ -354,10 +356,10 @@ function renderRoster() {
     list.innerHTML='<div class="empty-state">No players yet.<br>Add one above.</div>';
     return;
   }
-  var grouped={GK:[],DEF:[],MID:[],FWD:[]};
-  players.forEach(function(p){grouped[p.pos].push(p);});
+  var grouped={GK:[],DEF:[],MID:[],WIN:[],FWD:[]};
+  players.forEach(function(p){if(grouped[p.pos])grouped[p.pos].push(p);else grouped[p.pos]=[p];});
   list.innerHTML = POSITIONS.map(function(pos){
-    if(!grouped[pos].length) return '';
+    if(!grouped[pos]||!grouped[pos].length) return '';
     return '<p class="section-label" style="margin-top:12px">'+pos+'</p>'+
       grouped[pos].map(function(p){
         return '<div class="player-card" style="cursor:default">'+
@@ -422,7 +424,7 @@ function generateTeams() {
     teams.map(function(team,i){
       var T=TEAMS[i];
       var avg=team.players.length?(team.sum/team.players.length).toFixed(1):'0.0';
-      var byPos={GK:[],DEF:[],MID:[],FWD:[]};
+      var byPos={GK:[],DEF:[],MID:[],WIN:[],FWD:[]};
       team.players.forEach(function(p){byPos[p.pos].push(p);});
       var fillPct=maxSum>0?Math.round((team.sum/maxSum)*100):0;
       var rows=POSITIONS.map(function(pos){

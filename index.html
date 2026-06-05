@@ -88,6 +88,8 @@ html, body { background: #F9FAFB; font-family: var(--font-sans); -webkit-text-si
 .add-form input, .add-form select { width: 100%; margin-bottom: 8px; padding: 11px 12px; border-radius: var(--r-md); border: 1px solid var(--color-border2); background: var(--color-bg); font-size: 15px; font-family: var(--font-sans); color: var(--color-text-primary); -webkit-appearance: none; appearance: none; outline: none; }
 .add-form select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%236B7280' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
 .add-form input:focus, .add-form select:focus { border-color: #111827; }
+.add-form select.placeholder { color: var(--color-text-tertiary); }
+.add-form select option { color: var(--color-text-primary); }
 
 /* TEAM CARD */
 .team-card { background: var(--color-bg); border-left: 4px solid #ccc; border-top: 1px solid var(--color-border); border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); border-radius: var(--r-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
@@ -179,16 +181,18 @@ html, body { background: #F9FAFB; font-family: var(--font-sans); -webkit-text-si
       <p class="section-label">Add new player</p>
       <input type="text" id="new-name" placeholder="Player name" autocomplete="off" autocorrect="off" autocapitalize="words" />
       <select id="new-pos">
+        <option value="" disabled selected>Select Player's Position</option>
         <option value="GK">GK - Goalkeeper</option>
         <option value="DEF">DEF - Defender</option>
-        <option value="MID" selected>MID - Midfielder</option>
+        <option value="MID">MID - Midfielder</option>
         <option value="WIN">WIN - Winger</option>
         <option value="FWD">FWD - Forward</option>
       </select>
       <select id="new-str">
+        <option value="" disabled selected>Select Player's Strength</option>
         <option value="1">Beginner (1 star)</option>
         <option value="2">Casual (2 stars)</option>
-        <option value="3" selected>Average (3 stars)</option>
+        <option value="3">Average (3 stars)</option>
         <option value="4">Good (4 stars)</option>
         <option value="5">Elite (5 stars)</option>
       </select>
@@ -305,11 +309,20 @@ function initials(name) { return name.split(' ').map(function(w){return w[0];}).
 function avatarStyle(id) { var c=AVATARS[id%AVATARS.length].split('|'); return 'background:'+c[0]+';color:'+c[1]; }
 function stars(n) { return '&#9733;'.repeat(n)+'&#9734;'.repeat(5-n); }
 
+function resetForm() {
+  document.getElementById('new-name').value = '';
+  var pos = document.getElementById('new-pos');
+  var str = document.getElementById('new-str');
+  pos.value = ''; pos.classList.add('placeholder');
+  str.value = ''; str.classList.add('placeholder');
+}
+
 function showTab(t) {
   document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
   document.querySelectorAll('.section').forEach(function(el){el.classList.remove('active');});
   document.getElementById('tab-'+t).classList.add('active');
   document.getElementById('section-'+t).classList.add('active');
+  if(t === 'roster') resetForm();
 }
 
 function renderTeamsPicker() {
@@ -383,9 +396,13 @@ function clearAll() { present.clear(); save(); renderMatchday(); }
 
 function addPlayer() {
   var name = document.getElementById('new-name').value.trim();
+  var pos = document.getElementById('new-pos').value;
+  var str = document.getElementById('new-str').value;
   if(!name) { toast('Enter a player name'); return; }
-  players.push({id:nextId++, name:name, pos:document.getElementById('new-pos').value, str:parseInt(document.getElementById('new-str').value)});
-  document.getElementById('new-name').value='';
+  if(!pos)  { toast('Select a position'); return; }
+  if(!str)  { toast('Select a strength'); return; }
+  players.push({id:nextId++, name:name, pos:pos, str:parseInt(str)});
+  resetForm();
   save(); renderRoster(); renderMatchday();
   toast('Player added!');
 }
@@ -491,7 +508,14 @@ async function nukeAll() {
   toast('All data cleared');
 }
 
-renderTeamsPicker(); renderMatchday(); renderRoster();
+renderTeamsPicker(); renderMatchday(); renderRoster(); resetForm();
+
+document.getElementById('new-pos').addEventListener('change', function(){
+  this.classList.toggle('placeholder', !this.value);
+});
+document.getElementById('new-str').addEventListener('change', function(){
+  this.classList.toggle('placeholder', !this.value);
+});
 </script>
 </body>
 </html>
